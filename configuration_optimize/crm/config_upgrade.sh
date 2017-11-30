@@ -39,8 +39,8 @@ for i in $(seq $file_count) ; do
 		else
 			prop_key=`echo $propertiesline | awk -F= '{gsub(/^( |\t)*|( |\t)*$/,"",$1);print $1}'`
 			prop_value=`echo $propertiesline | awk -F= '{gsub(/^( |\t)*|( |\t)*$/,"",$1);print $2}'`
-			if [ $(echo $prop_value | awk -F '[$|{|}]' '{pirint $3}') ]; then
-				prop_variable=$(echo $prop_value | awk -F '[$|{|}]' '{print $3}')
+			prop_variable=$(echo $prop_value | sed 's/^\${\([^ |\t]*\)}/\1/g')
+			if [ $prop_value != $prop_variable ]; then
 				if [ "$prop_key" != "$prop_variable" ];then
 					echo "[Error]: $propertiesline命名错误，请检查"
 					EXIT_FLAG="1"
@@ -59,9 +59,9 @@ for i in $(seq $file_count) ; do
 		echo $line
 		
 	        change_value=`echo $line | awk -F= '{gsub(/^( |\t)*|( |\t)*$/,"",$2);print $2}'`
-		change_variable_part=`echo $change_value | awk -F '[$|{|}]' '{print $3}'`
+		change_variable_part=`echo $change_value | sed 's/^\${\([^ |\t]*\)}/\1/g'`
 		#如果是变量则需要合并到test_config.properties
-		if [ "$change_variable_part" ]; then
+		if [ "$change_variable_part" != $change_value ]; then
                         exist_config=$(grep  "^$key[ \t]*=" "$CONFIG_FILE_PATH/$CONFIG_FILE" | head -1)
 			#delete config
                         if [ $(echo $line | awk '/^-{2}/ {print}') ]; then
@@ -77,9 +77,9 @@ for i in $(seq $file_count) ; do
                 	if [ "$exist_config" ]; then
                         	exist_value=`echo $exist_config | awk -F= '{gsub(/^( |\t)*|( |\t)*$/,"",$2);print $2}'`
                         	if [ "$exist_value" != "$change_value" ]; then
-                                        exist_variable_part=`echo $exist_value | awk -F '[$|{|}]' '{print $3}'`
+                                        exist_variable_part=`echo $exist_value | sed 's/^\${\([^ |\t]*\)}/\1/g'`
                                         #change.properties是变量，test_config是变量，覆盖原先配置
-                                        if [ "$exist_variable_part" ]; then
+                                        if [ "$exist_variable_part" != "$exist_value" ]; then
                                                 sed -i -e "/^$key[ \t]*=/c $line" "$CONFIG_FILE_PATH/$CONFIG_FILE"
                                                 echo "[Info]:  $line已合并到$CONFIG_FILE_PATH/$CONFIG_FILE上,请把$change_value修改成实际值后再次运行脚本"
                                                 MANUAL_FLAG=1;
@@ -151,15 +151,15 @@ for file in $(ls $WEB_APP_PATH | grep '.properties$') ; do
 		t=`grep "^$key[ \t]*=" "$CONFIG_FILE_PATH/$CONFIG_FILE"`
 		if [ ! "$t" ]; then
 			value=$(echo $config | awk -F= '{gsub(/^( |\t)*|( |\t)*$/,"",$2);print $2}')
-			variable_part=`echo $value | awk -F '[$|{|}]' '{print $3}'`
-			if [ "$variable_part" ]; then
+			variable_part=`echo $value | sed 's/^\${\([^ |\t]*\)}/\1/g'`
+			if [ "$variable_part" != "$value" ]; then
 				echo  "[Error]: $CONFIG_FILE_PATH/$CONFIG_FILE不完整,$key项缺失,请检查"
 				exit 1
 			fi
 		else
 			value=$(echo $t | awk -F= '{gsub(/^( |\t)*|( |\t)*$/,"",$2);print $2}')
-			variable_part=`echo $value | awk -F '[$|{|}]' '{print $3}'`
-			if [ "$variable_part" ]; then
+			variable_part=`echo $value | sed 's/^\${\([^ |\t]*\)}/\1/g'`
+			if [ "$variable_part" != "$value" ]; then
 				echo  "[Error]: $CONFIG_FILE_PATH/$CONFIG_FILE配置项$key未修改成实际值,请检查"
 				exit 1
 			fi
