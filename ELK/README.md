@@ -110,14 +110,15 @@ output {
 ```
 
 ##### 运行
-		检测配置：bin/logstash -f first-pipeline.conf --config.test_and_exit
-		运行：bin/logstash -f first-pipeline.conf --config.reload.automatic
+检测配置：bin/logstash -f first-pipeline.conf --config.test_and_exit<br>
+运行：bin/logstash -f first-pipeline.conf --config.reload.automatic
 
 ##### 过滤
-		Grok filter plugin:Parse arbitrary text and structure it.
-		Logstash ships with about 120 patterns by default:https://github.com/logstash-plugins/logstash-patterns-core/blob/master/patterns/grok-patterns
-		building patterns to match your logs:http://grokdebug.herokuapp.com and http://grokconstructor.appspot.com/
-		grok pattern:%{SYNTAX:SEMANTIC} SEMANTIC:identifier you give to the piece of text being matched.
+Grok filter plugin:Parse arbitrary text and structure it. 
+Logstash ships with about 120 patterns by default:https://github.com/logstash-plugins/logstash-patterns-core/blob/master/patterns/grok-patterns 
+
+building patterns to match your logs:http://grokdebug.herokuapp.com and http://grokconstructor.appspot.com/<br>
+grok pattern:%{SYNTAX:SEMANTIC} SEMANTIC:identifier you give to the piece of text being matched.<br>
 >例： 3.44 55.3.244.1  %{NUMBER:duration} %{IP:client}
 >%{NUMBER:num:int}:converts the num semantic from a string to an integer
 
