@@ -1,4 +1,4 @@
-# Structure
+# ELK安装配置
 ## Module Overview
 
 以前系统里出现了异常，很大部分都是由业务人员或者用户发现再反馈到研发这边，然后研发查日志定位问题。缺少应用监控系统导致问题发现的不及时，甚至一些问题隐藏了很久才发现，造成了无谓的成本消耗和损失，而且日志文件太大定位起来也不方便。为了提高系统的可用性，及时发现线上异常，快速定位问题，需要对现有应用做一个可用性的监控，能及时报警，暴露问题。
@@ -58,7 +58,7 @@ ELK是Elastic的三个开源产品，其中Logstash（server-side data processin
 
 ELK+Beats
 流程图：
-
+![]( https://github.com/zjhgx/archecture_zjhgx/blob/master/ELK/%E6%97%A5%E5%BF%97%E7%9B%91%E6%8E%A7%E6%B5%81%E7%A8%8B.png )
 
 #### Filebeat
 用于日志收集和传输：reliability and low latency
