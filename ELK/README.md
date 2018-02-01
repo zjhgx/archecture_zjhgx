@@ -63,12 +63,70 @@ ELK+Beats
 #### Filebeat
 用于日志收集和传输：reliability and low latency
 
-##### Logstash
+##### 安装
+curl -L -O https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-6.1.2-linux-x86_64.tar.gz
+tar xzvf filebeat-6.1.2-linux-x86_64.tar.gz
+
+##### 配置
+filebeat.yml
+```yml
+filebeat.prospectors:
+- type: log
+  enabled: true
+  paths:
+    - /path/to/file/logstash-tutorial.log 
+output.logstash:
+  hosts: ["localhost:5044"]
+```
+
+##### 运行
+sudo ./filebeat -e -c filebeat.yml -d "publish"
+
+#### Logstash
 Logstash用于提取需要的日志再存入Elasticsearch
 
-##### Elasticsearch
+##### 安装
+curl -L -O https://artifacts.elastic.co/downloads/logstash/logstash-6.1.2.tar.gz
+tar xzvf logstash-6.1.2.tar.gz
 
-##### Kibana
+##### 配置
+新建文件/conf/pipline.conf
+```
+# The # character at the beginning of a line indicates a comment. Use
+# comments to describe your configuration.
+input {
+ beats {
+        port => "5044"
+    }
+}
+# The filter part of this file is commented out to indicate that it is
+# optional.
+# filter {
+#
+# }
+output {
+	stdout { codec => rubydebug }
+}
+```
+
+##### 运行
+检测配置：bin/logstash -f first-pipeline.conf --config.test_and_exit
+运行：bin/logstash -f first-pipeline.conf --config.reload.automatic
+
+##### 过滤
+Grok filter plugin:Parse arbitrary text and structure it.
+Logstash ships with about 120 patterns by default:https://github.com/logstash-plugins/logstash-patterns-core/blob/master/patterns/grok-patterns
+building patterns to match your logs:http://grokdebug.herokuapp.com and http://grokconstructor.appspot.com/
+grok pattern:%{SYNTAX:SEMANTIC} SEMANTIC:identifier you give to the piece of text being matched.
+>例： 3.44 55.3.244.1  %{NUMBER:duration} %{IP:client}
+>%{NUMBER:num:int}:converts the num semantic from a string to an integer
+
+
+
+
+#### Elasticsearch
+
+#### Kibana
 
 ##### X-Pack     
 
