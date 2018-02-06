@@ -2,7 +2,9 @@
 ## Module Overview
 
 以前系统里出现了异常，很大部分都是由业务人员或者用户发现再反馈到研发这边，然后研发查日志定位问题。缺少应用监控系统导致问题发现的不及时，甚至一些问题隐藏了很久才发现，造成了无谓的成本消耗和损失，而且日志文件太大定位起来也不方便。为了提高系统的可用性，及时发现线上异常，快速定位问题，需要对现有应用做一个可用性的监控，能及时报警，暴露问题。<br>
-由于应用日志记录了所有的运行信息，我们只需要对日志做一个监控就能对应用的可用性做一个监控。目前公司有Java，Php，Python构成的系统，以后随着服务和应用的增加，虚拟机和容器的运用，监控源势必还会增加。为了对这种需求，一个统一的集中式监控系统是很有必要的。对各系统用同一套方案完成日志采集，日志存储，日志分析，目前有开源的ELK Stack（Elastcsearch, Logstash,Kibana）框架已经得到了不少公司的运用。日志监控框架的意义不仅仅可以监控Tomcat等应用日志，而且可以应用到数据库，http服务器，操作系统等，可以按需求灵活运用，比如可以用来监控Http 500的错误，mysql的连接数等信息，再后来和大数据分析结合.<br>
+
+由于应用日志记录了所有的运行信息，我们只需要对日志做一个监控就能对应用的可用性做一个监控。目前公司有Java,Php，Python构成的系统，以后随着服务和应用的增加，虚拟机和容器的运用，监控源势必还会增加。为了对这种需求，一个统一的集中式监控系统是很有必要的。对各系统用同一套方案完成日志采集，日志存储，日志分析，目前有开源的ELK Stack（Elastcsearch, Logstash,Kibana）框架已经得到了不少公司的运用。日志监控框架的意义不仅仅可以监控Tomcat等应用日志，而且可以应用到数据库，http服务器，操作系统等，可以按需求灵活运用，比如可以用来监控Http 500的错误，mysql的连接数等信息，再后来和大数据分析结合.<br>
+
 ELK是Elastic的三个开源产品，其中Logstash（server-side data processing pipeline）用于日志的收集，传输;Elasticsearch（highly scalable open-source full-text search and analytics engine）用于数据存储，分析;Kibana（analytics and visualization platform ）用于前端展示。下面是这个框架的特点
 
 * 配置简单：采用业界通用配置语法设计
@@ -61,11 +63,11 @@ ELK+Beats
 #### Filebeat
 用于日志收集和传输：reliability and low latency
 
-##### 安装
+###### 安装
 curl -L -O https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-6.1.2-linux-x86_64.tar.gz<br>
 tar xzvf filebeat-6.1.2-linux-x86_64.tar.gz
 
-##### 配置
+###### 配置
 filebeat.yml
 ```yml
 filebeat.prospectors:
@@ -77,17 +79,17 @@ output.logstash:
   hosts: ["localhost:5044"]
 ```
 
-##### 运行
-sudo ./filebeat -e -c filebeat.yml -d "publish"
+###### 运行
+sudo ./filebeat -e -c filebeat.yml -d "publish" --strict.perms=false
 
 #### Logstash
 Logstash用于提取需要的日志再存入Elasticsearch
 
-##### 安装
+###### 安装
 curl -L -O https://artifacts.elastic.co/downloads/logstash/logstash-6.1.2.tar.gz<br>
 tar xzvf logstash-6.1.2.tar.gz
 
-##### 配置
+###### 配置
 新建文件/conf/pipline.conf
 ```
 # The # character at the beginning of a line indicates a comment. Use
@@ -99,34 +101,70 @@ input {
 }
 # The filter part of this file is commented out to indicate that it is
 # optional.
-# filter {
-#
-# }
-output {
-	stdout { codec => rubydebug }
+filter {
+    grok {
+        match => { "message" => "%{HTTPD_COMMONLOG}"}
+    }
+
+    geoip {
+        source => "clientip"
+    }
 }
+
+output {
+#       stdout { codec => rubydebug }
+        elasticsearch {
+                hosts => [ "localhost:9200" ]
+        }
+}
+
 ```
 
-##### 运行
-检测配置：bin/logstash -f first-pipeline.conf --config.test_and_exit<br>
-运行：bin/logstash -f first-pipeline.conf --config.reload.automatic
+###### 运行
+检测配置：bin/logstash -f ../conf/pipline.conf --config.test_and_exit<br>
+运行：bin/logstash -f ../conf/pipline.conf --config.reload.automatic
 
-##### 过滤
+###### 过滤
 Grok filter plugin:Parse arbitrary text and structure it.<br>
 Logstash ships with about 120 patterns by default:https://github.com/logstash-plugins/logstash-patterns-core/blob/master/patterns/grok-patterns<br> 
 building patterns to match your logs:http://grokdebug.herokuapp.com and http://grokconstructor.appspot.com/<br>
 grok pattern:%{SYNTAX:SEMANTIC} SEMANTIC:identifier you give to the piece of text being matched.<br>
->例： 3.44 55.3.244.1  %{NUMBER:duration} %{IP:client}<br>
+>55.3.244.1 GET /index.html 15824 0.043  --  %{IP:client} %{WORD:method} %{URIPATHPARAM:request} %{NUMBER:bytes} %{NUMBER:duration}<br>
 >%{NUMBER:num:int}:converts the num semantic from a string to an integer
-
+>regular expressions:https://github.com/kkos/oniguruma/blob/master/doc/RE
 
 
 
 #### Elasticsearch
 
+###### 安装
+curl -L -O https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-6.1.2.tar.gz<br>
+tar -xvf elasticsearch-6.1.2.tar.gz
+
+###### 一些命令
+*  List All Indices:curl 'localhost:9200/_cat/indices?v'<br>
+
+###### 运行
+cd elasticsearch-6.1.2/bin<br>
+./elasticsearch
+
 #### Kibana
 
-##### X-Pack     
+###### install
+Kibana should be configured to run against an Elasticsearch node of the same version. This is the officially supported configuration.<br>
+wget https://artifacts.elastic.co/downloads/kibana/kibana-6.1.2-linux-x86_64.tar.gz<br>
+sha1sum kibana-6.1.2-linux-x86_64.tar.gz<br>
+tar -xzf kibana-6.1.2-linux-x86_64.tar.gz
+cd kibana-6.1.2-linux-x86_64/ 
+
+###### 运行
+./bin/kibana<br>
+localhost:5601<br>
+localhost:5601/status
+
+####
+
+#### X-Pack     
 
 X-Pack提供了ELK的增强工具，报警是其中之一功能，按照官网的说法，可以定义一些watcher scheduler定时在Elasticsearch中检索，根据结果和触发条件选择Action发出提醒
 
