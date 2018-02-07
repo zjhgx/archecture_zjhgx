@@ -175,13 +175,21 @@ https://www.elastic.co/downloads/x-pack<br>
  https://artifacts.elastic.co/downloads/packs/x-pack/x-pack-6.1.2.zip<br>
  bin/elasticsearch-plugin install file:///path/to/file/x-pack-6.1.2.zip(optional)<br>
  bin/elasticsearch-plugin install x-pack<br>
- 2.Start Elasticsearch:bin/elasticsearch<br>
- 3.Generate default passwords:bin/x-pack/setup-passwords auto<br>
- 4.Install X-Pack into Kibana:bin/kibana-plugin install x-pack<br>
- 5.Add credentials to the kibana.yml file:
- * elasticsearch.username: "kibana"   
- * elasticsearch.password:  "<pwd>"
- 
+ 2.Config TLS/SSL
+ 3.Start Elasticsearch:bin/elasticsearch<br>
+ 4.Generate default passwords:bin/x-pack/setup-passwords auto  bin/x-pack/setup-passwords interactive<br>
+   Built-in Users:<br>
+ * elastic:A built-in superuser see:https://www.elastic.co/guide/en/x-pack/6.1/built-in-roles.html 7114217<br> 
+ * kibana:The user Kibana uses to connect and communicate with Elasticsearch. kibana<br>
+ * logstash_system: The user Logstash uses when storing monitoring information in Elasticsearch. logstash<br> 
+ 5.Install X-Pack into Kibana:bin/kibana-plugin install x-pack / bin/kibana-plugin install file:///path/to/file/x-pack-6.1.2.zip<br>
+ 6.Add credentials to the kibana.yml file:<br>
+ * elasticsearch.username: "kibana"<br>   
+ * elasticsearch.password:  "<pwd>"<br>
+ 7.Start Kibana:bin/kibana<br>
+ 8.
+ * Navigate to Kibana at http://localhost:5601/<br>
+ * Log in as the built-in elastic user with the auto-generated password from step 3<br>
  
 ###### 运行
 
