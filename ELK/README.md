@@ -139,13 +139,19 @@ grok pattern:%{SYNTAX:SEMANTIC} SEMANTIC:identifier you give to the piece of tex
 ELK核心
 ###### 安装
 curl -L -O https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-6.1.2.tar.gz<br>
-tar -xvf elasticsearch-6.1.2.tar.gz
+tar -xvf elasticsearch-6.1.2.tar.gz<br>
 cd elasticsearch-6.1.2/bin<br>
 ./elasticsearch
 
 ###### 一些命令
-*  List All Indices:curl 'localhost:9200/_cat/indices?v'<br>
+*  List All Indices:curl 'localhost:9200/_cat/indices?v' --- curl -XGET -u elastic 'localhost:9200/_cat/indices?v&pretty'<br>
 
+###### 遇到的问题
+* low disk: 
+>elasticsearch log: [2018-02-07T17:35:39,088][WARN ][o.e.c.r.a.DiskThresholdMonitor] [MgFs-Nt] flood stage disk watermark [95%] exceeded on [MgFs-NtaRUiriAD4fK1mMg][MgFs-Nt][/home/vobile/bin/elasticsearch-6.1.2/data/nodes/0] free: 6.8gb[3.2%], all indices on this node will marked read-only  >kibana log: log   [09:54:52.877] [error][status][plugin:xpack_main@6.1.2] Status changed from yellow to red - [cluster_block_exception] blocked by: [FORBIDDEN/12/index read-only / allow delete (api)];
+ 
+ 
+ 
 #### Kibana
 前端展示
 
@@ -156,17 +162,19 @@ sha1sum kibana-6.1.2-linux-x86_64.tar.gz<br>
 tar -xzf kibana-6.1.2-linux-x86_64.tar.gz<br>
 cd kibana-6.1.2-linux-x86_64/<br>
 ./bin/kibana<br>
+打开localhost:5601<br>
 
 ###### 一些命令
 
-localhost:5601<br>
+
 localhost:5601/status
 
 ####
 
 #### X-Pack     
 X-Pack提供了ELK的增强工具，报警是其中之一功能，按照官网的说法，可以定义一些watcher scheduler定时在Elasticsearch中检索，根据结果和触发条件选择Action发出提醒<br>
-部分功能需要付费：https://www.elastic.co/subscriptions
+部分功能需要付费：https://www.elastic.co/subscriptions<br>
+[info][license][xpack] Imported license information from Elasticsearch for the [monitoring] cluster: mode: trial | status: active | expiry date: 2018-03-08T20:40:42+08:00
 
 ###### 安装
 https://www.elastic.co/downloads/x-pack<br>
