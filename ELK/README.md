@@ -179,8 +179,8 @@ https://www.elastic.co/downloads/x-pack<br>
  3.Generate default passwords:bin/x-pack/setup-passwords auto<br>
  4.Install X-Pack into Kibana:bin/kibana-plugin install x-pack<br>
  5.Add credentials to the kibana.yml file:
- 	* elasticsearch.username: "kibana"   
- 	* elasticsearch.password:  "<pwd>"
+ * elasticsearch.username: "kibana"   
+ * elasticsearch.password:  "<pwd>"
  
  
 ###### 运行
