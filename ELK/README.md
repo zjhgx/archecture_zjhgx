@@ -140,25 +140,25 @@ ELK核心
 ###### 安装
 curl -L -O https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-6.1.2.tar.gz<br>
 tar -xvf elasticsearch-6.1.2.tar.gz
+cd elasticsearch-6.1.2/bin<br>
+./elasticsearch
 
 ###### 一些命令
 *  List All Indices:curl 'localhost:9200/_cat/indices?v'<br>
 
-###### 运行
-cd elasticsearch-6.1.2/bin<br>
-./elasticsearch
-
 #### Kibana
 前端展示
+
 ###### install
 Kibana should be configured to run against an Elasticsearch node of the same version. This is the officially supported configuration.<br>
 wget https://artifacts.elastic.co/downloads/kibana/kibana-6.1.2-linux-x86_64.tar.gz<br>
 sha1sum kibana-6.1.2-linux-x86_64.tar.gz<br>
-tar -xzf kibana-6.1.2-linux-x86_64.tar.gz
-cd kibana-6.1.2-linux-x86_64/ 
-
-###### 运行
+tar -xzf kibana-6.1.2-linux-x86_64.tar.gz<br>
+cd kibana-6.1.2-linux-x86_64/<br>
 ./bin/kibana<br>
+
+###### 一些命令
+
 localhost:5601<br>
 localhost:5601/status
 
@@ -179,13 +179,13 @@ https://www.elastic.co/downloads/x-pack<br>
  3.Start Elasticsearch:bin/elasticsearch<br>
  4.Generate default passwords:bin/x-pack/setup-passwords auto  bin/x-pack/setup-passwords interactive<br>
    Built-in Users:<br>
- * elastic:A built-in superuser see:https://www.elastic.co/guide/en/x-pack/6.1/built-in-roles.html 7114217<br> 
- * kibana:The user Kibana uses to connect and communicate with Elasticsearch. kibana<br>
- * logstash_system: The user Logstash uses when storing monitoring information in Elasticsearch. logstash<br> 
- 5.Install X-Pack into Kibana:bin/kibana-plugin install x-pack / bin/kibana-plugin install file:///path/to/file/x-pack-6.1.2.zip<br>
+ * elastic:A built-in superuser see:https://www.elastic.co/guide/en/x-pack/6.1/built-in-roles.html 7114217 
+ * kibana:The user Kibana uses to connect and communicate with Elasticsearch. kibana
+ * logstash_system: The user Logstash uses when storing monitoring information in Elasticsearch. logstash
+ 5.Install X-Pack into Kibana:bin/kibana-plugin install x-pack or bin/kibana-plugin install file:///path/to/file/x-pack-6.1.2.zip<br>
  6.Add credentials to the kibana.yml file:<br>
- * elasticsearch.username: "kibana"<br>   
- * elasticsearch.password:  "<pwd>"<br>
+ * elasticsearch.username: "kibana"
+ * elasticsearch.password:  "<pwd>"
  7.Start Kibana:bin/kibana<br>
  8.
  * Navigate to Kibana at http://localhost:5601/<br>
