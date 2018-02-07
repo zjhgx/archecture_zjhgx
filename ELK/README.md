@@ -136,7 +136,7 @@ grok pattern:%{SYNTAX:SEMANTIC} SEMANTIC:identifier you give to the piece of tex
 
 
 #### Elasticsearch
-
+ELK核心
 ###### 安装
 curl -L -O https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-6.1.2.tar.gz<br>
 tar -xvf elasticsearch-6.1.2.tar.gz
@@ -149,7 +149,7 @@ cd elasticsearch-6.1.2/bin<br>
 ./elasticsearch
 
 #### Kibana
-
+前端展示
 ###### install
 Kibana should be configured to run against an Elasticsearch node of the same version. This is the officially supported configuration.<br>
 wget https://artifacts.elastic.co/downloads/kibana/kibana-6.1.2-linux-x86_64.tar.gz<br>
@@ -165,8 +165,32 @@ localhost:5601/status
 ####
 
 #### X-Pack     
+X-Pack提供了ELK的增强工具，报警是其中之一功能，按照官网的说法，可以定义一些watcher scheduler定时在Elasticsearch中检索，根据结果和触发条件选择Action发出提醒<br>
+部分功能需要付费：https://www.elastic.co/subscriptions
 
-X-Pack提供了ELK的增强工具，报警是其中之一功能，按照官网的说法，可以定义一些watcher scheduler定时在Elasticsearch中检索，根据结果和触发条件选择Action发出提醒
+###### 安装
+https://www.elastic.co/downloads/x-pack<br>
+
+ 1.Install X-Pack into Elasticsearch<br>
+ https://artifacts.elastic.co/downloads/packs/x-pack/x-pack-6.1.2.zip<br>
+ bin/elasticsearch-plugin install file:///path/to/file/x-pack-6.1.2.zip(optional)<br>
+ bin/elasticsearch-plugin install x-pack<br>
+ 2.Start Elasticsearch:bin/elasticsearch<br>
+ 3.Generate default passwords:bin/x-pack/setup-passwords auto<br>
+ 4.Install X-Pack into Kibana:bin/kibana-plugin install x-pack<br>
+ 5.Add credentials to the kibana.yml file:
+ 	* elasticsearch.username: "kibana"   
+ 	* elasticsearch.password:  "<pwd>"
+ 
+ 
+###### 运行
+
+###### security
+* AUTHENTICATION:password
+* AUTHORIZATION:Manage Users and Roles
+* ENCRYPTION:SSL/TLS encryption,IP filtering.Prevent Snooping, Tampering, and Sniffing.
+* LAYERED SECURITY:Field- and document-level security
+* AUDIT LOGGING:easily maintain a complete record of all system and user activity
 
 ```
 PUT _xpack/watcher/watch/log_error_watch
