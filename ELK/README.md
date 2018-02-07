@@ -176,6 +176,8 @@ https://www.elastic.co/downloads/x-pack<br>
  bin/elasticsearch-plugin install file:///path/to/file/x-pack-6.1.2.zip(optional)<br>
  bin/elasticsearch-plugin install x-pack<br>
  2.Config TLS/SSL<br>
+ * 如果没有配置ssl，启动kibana有报错：![]( https://github.com/zjhgx/archecture_zjhgx/blob/master/no_ssl.png )
+
  3.Start Elasticsearch:bin/elasticsearch<br>
  4.Generate default passwords:bin/x-pack/setup-passwords auto  bin/x-pack/setup-passwords interactive<br>
    Built-in Users:<br>
@@ -193,8 +195,6 @@ https://www.elastic.co/downloads/x-pack<br>
  * Navigate to Kibana at http://localhost:5601/<br>
  * Log in as the built-in elastic user with the auto-generated password from step 3<br>
  
-###### 运行
-
 ###### security
 * AUTHENTICATION:password
 * AUTHORIZATION:Manage Users and Roles
