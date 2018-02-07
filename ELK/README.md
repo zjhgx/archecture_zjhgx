@@ -182,10 +182,12 @@ https://www.elastic.co/downloads/x-pack<br>
  > elastic:A built-in superuser see:https://www.elastic.co/guide/en/x-pack/6.1/built-in-roles.html 7114217 
  > kibana:The user Kibana uses to connect and communicate with Elasticsearch. kibana
  > logstash_system: The user Logstash uses when storing monitoring information in Elasticsearch. logstash<br>
+ 
  5.Install X-Pack into Kibana:bin/kibana-plugin install x-pack or bin/kibana-plugin install file:///path/to/file/x-pack-6.1.2.zip<br>
  6.Add credentials to the kibana.yml file:<br>
  > elasticsearch.username: "kibana"
  > elasticsearch.password:  "<pwd>"<br>
+ 
  7.Start Kibana:bin/kibana<br>
  8.
  > Navigate to Kibana at http://localhost:5601/<br>
