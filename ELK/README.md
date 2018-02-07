@@ -178,7 +178,7 @@ https://www.elastic.co/downloads/x-pack<br>
  2.Config TLS/SSL
  3.Start Elasticsearch:bin/elasticsearch<br>
  4.Generate default passwords:bin/x-pack/setup-passwords auto  bin/x-pack/setup-passwords interactive<br>
-   Built-in Users:<br>
+   Built-in Users:
  * elastic:A built-in superuser see:https://www.elastic.co/guide/en/x-pack/6.1/built-in-roles.html 7114217 
  * kibana:The user Kibana uses to connect and communicate with Elasticsearch. kibana
  * logstash_system: The user Logstash uses when storing monitoring information in Elasticsearch. logstash
