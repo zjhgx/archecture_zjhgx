@@ -147,9 +147,12 @@ cd elasticsearch-6.1.2/bin<br>
 *  List All Indices:curl 'localhost:9200/_cat/indices?v' --- curl -XGET -u elastic 'localhost:9200/_cat/indices?v&pretty'<br>
 
 ###### 遇到的问题
-* low disk: 
->elasticsearch log: [2018-02-07T17:35:39,088][WARN ][o.e.c.r.a.DiskThresholdMonitor] [MgFs-Nt] flood stage disk watermark [95%] exceeded on [MgFs-NtaRUiriAD4fK1mMg][MgFs-Nt][/home/vobile/bin/elasticsearch-6.1.2/data/nodes/0] free: 6.8gb[3.2%], all indices on this node will marked read-only  >kibana log: log   [09:54:52.877] [error][status][plugin:xpack_main@6.1.2] Status changed from yellow to red - [cluster_block_exception] blocked by: [FORBIDDEN/12/index read-only / allow delete (api)];
- 
+* FORBIDDEN/12/index read-only / allow delete (api): 
+>elasticsearch log: [2018-02-07T17:35:39,088][WARN ][o.e.c.r.a.DiskThresholdMonitor] [MgFs-Nt] flood stage disk watermark [95%] exceeded on [MgFs-NtaRUiriAD4fK1mMg][MgFs-Nt][/home/vobile/bin/elasticsearch-6.1.2/data/nodes/0] free: 6.8gb[3.2%], all indices on this node will marked read-only<br>  >kibana log: log   [09:54:52.877] [error][status][plugin:xpack_main@6.1.2] Status changed from yellow to red - [cluster_block_exception] blocked by: [FORBIDDEN/12/index read-only / allow delete (api)];<br>
+>kibana status red<br>
+
+curl -XPUT -H "Content-Type: application/json" -u elastic 'localhost:9200/_settings' -d '{"index.blocks.read_only_allow_delete": null}' 后
+>log   [14:21:34.547] [info][status][plugin:elasticsearch@6.1.2] Status changed from red to green - Ready
  
  
 #### Kibana
