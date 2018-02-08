@@ -138,6 +138,7 @@ grok pattern:%{SYNTAX:SEMANTIC} SEMANTIC:identifier you give to the piece of tex
 #### Elasticsearch
 ELK核心
 ###### 安装
+install jdk1.8<br>
 curl -L -O https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-6.1.2.tar.gz<br>
 tar -xvf elasticsearch-6.1.2.tar.gz<br>
 cd elasticsearch-6.1.2/bin<br>
@@ -145,17 +146,97 @@ cd elasticsearch-6.1.2/bin<br>
 
 ###### 一些命令
 *  List All Indices:curl 'localhost:9200/_cat/indices?v' --- curl -XGET -u elastic 'localhost:9200/_cat/indices?v&pretty'<br>
+* 集群健康状态： curl -XGET 'http://localhost:9200/_cluster/health?pretty' -u elastic
+* 一个index库健康状态： curl -XGET 'http://localhost:8200/_cluster/health/zh?pretty'
 
 ###### 遇到的问题
-* FORBIDDEN/12/index read-only / allow delete (api): 
+* FORBIDDEN/12/index read-only / allow delete (api)  flood stage disk watermark: 
 >elasticsearch log: [2018-02-07T17:35:39,088][WARN ][o.e.c.r.a.DiskThresholdMonitor] [MgFs-Nt] flood stage disk watermark [95%] exceeded on [MgFs-NtaRUiriAD4fK1mMg][MgFs-Nt][/home/vobile/bin/elasticsearch-6.1.2/data/nodes/0] free: 6.8gb[3.2%], all indices on this node will marked read-only<br>
 >kibana log: log   [09:54:52.877] [error][status][plugin:xpack_main@6.1.2] Status changed from yellow to red - [cluster_block_exception] blocked by: [FORBIDDEN/12/index read-only / allow delete (api)];<br>
 >kibana status red<br>
 
-curl -XPUT -H "Content-Type: application/json" -u elastic 'localhost:9200/_settings' -d '{"index.blocks.read_only_allow_delete": null}' 后
+curl -XPUT -H "Content-Type: application/json" -u elastic 'localhost:9200/_settings' -d '{"index.blocks.read_only_allow_delete": null}' 后，FORBIDDEN/12消失
 >log   [14:21:34.547] [info][status][plugin:elasticsearch@6.1.2] Status changed from red to green - Ready
+
+* 当我把磁盘一个大文件删除后,此时磁盘剩余空间12%，然后日志变成:
+>start elasticsearch, ES log:[2018-02-08T16:46:28,453][INFO ][o.e.c.r.a.DiskThresholdMonitor] [MgFs-Nt] low disk watermark [85%] exceeded on [MgFs-NtaRUiriAD4fK1mMg][MgFs-Nt][/home/vobile/bin/elasticsearch-6.1.2/data/nodes/0] free: 25.5gb[12%], replicas will not be assigned to this node<br>
+>start kibana,ES log:[2018-02-08T15:49:32,422][WARN ][r.suppressed             ] path: /.kibana/doc/config%3A6.1.2, params: {index=.kibana, id=config:6.1.2, type=doc}
+org.elasticsearch.action.NoShardAvailableActionException: No shard available for [get [.kibana][doc][config:6.1.2]: routing [null]]<br>
+[2018-02-08T15:52:07,550][WARN ][r.suppressed             ] path: /.kibana/_search, params: {size=0, index=.kibana, from=0}
+org.elasticsearch.action.search.SearchPhaseExecutionException: all shards failed
+
+* 然后根据https://stackoverflow.com/questions/33369955/low-disk-watermark-exceeded-on，在 elasticsearch.yml中加入下面配置信息后警告消失。
+```
+cluster.routing.allocation.disk.threshold_enabled: true
+cluster.routing.allocation.disk.watermark.low: 4gb
+cluster.routing.allocation.disk.watermark.high: 2gb
+cluster.routing.allocation.disk.watermark.flood_stage: 1gb
+```
+
+* curl -XGET 'http://localhost:9200/_cluster/health?pretty' -u elastic, 发现status red
+```
+{，
+  "cluster_name" : "elasticsearch",
+  "status" : "red",
+  "timed_out" : false,
+  "number_of_nodes" : 1,
+  "number_of_data_nodes" : 1,
+  "active_primary_shards" : 12,
+  "active_shards" : 12,
+  "relocating_shards" : 0,
+  "initializing_shards" : 0,
+  "unassigned_shards" : 23,
+  "delayed_unassigned_shards" : 0,
+  "number_of_pending_tasks" : 0,
+  "number_of_in_flight_fetch" : 0,
+  "task_max_waiting_in_queue_millis" : 0,
+  "active_shards_percent_as_number" : 34.285714285714285
+}
+```
+curl -XGET -u elastic 'localhost:9200/_cat/indices?v&pretty'，发现.kibana和.logstash-2018.02.02 status red
+```
+health status index                           uuid                   pri rep docs.count docs.deleted store.size pri.store.size
+yellow open   .monitoring-es-6-2018.02.07     0N8SVrOwTt2NF2w0sgpYgg   1   1      45127           29     16.1mb         16.1mb
+yellow open   .monitoring-alerts-6            gJXWcTbbSB2clp2gvJOsvg   1   1          1            0     18.8kb         18.8kb
+yellow open   .watches                        613nDLaEQIy_inAtCim6Iw   1   1          5            0    890.3kb        890.3kb
+yellow open   .watcher-history-7-2018.02.08   tMXP2_3ARDifg5y6Yc7Nrw   1   1       1345            0      2.6mb          2.6mb
+yellow open   .triggered_watches              mrefM8jkRqiMLDMuvy83nA   1   1          0            0    122.7kb        122.7kb
+red    open   .kibana                         aKh0ZX6ISa2D1YpgQWnmWg   1   1                                                  
+yellow open   .watcher-history-7-2018.02.07   3MzdkjvcS2yR0aguXZLcKA   1   1       3907            0      3.5mb          3.5mb
+yellow open   .monitoring-es-6-2018.02.06     fysALZxsS2e8xu_EycPwHA   1   1       1277           66    797.1kb        797.1kb
+red    open   logstash-2018.02.02             RT_XzqDhTLKndk-RlgPspg   5   1                                                  
+green  open   .security-6                     UwJZiEZPQiGA935sq0FL9A   1   0          3            0      9.8kb          9.8kb
+yellow open   .monitoring-es-6-2018.02.08     mYHEcCxvQ_GfVV9WCmKvTQ   1   1      17272            0     16.9mb         16.9mb
+yellow open   .monitoring-kibana-6-2018.02.07 e6YF_Hu9QGe7L39p6eF3fg   1   1          2            0     28.1kb         28.1kb
+yellow open   .watcher-history-7-2018.02.06   5prFs1VbRPKchn4TRxAIlQ   1   1        158            0    326.8kb        326.8kb
+
+```
+>根据https://www.zhihu.com/question/34415340/answer/58590135，有primary shard未分配，curl -XGET 'http://localhost:9200/_cat/shards' -u elastic，发现
+```
+.kibana                         0 p UNASSIGNED                         
+.kibana                         0 r UNASSIGNED                         
+
+logstash-2018.02.02             3 p UNASSIGNED                         
+logstash-2018.02.02             3 r UNASSIGNED                         
+logstash-2018.02.02             1 p UNASSIGNED
+```
+>curl -XDELETE 'http://localhost:9200/logstash-2018.02.02' -u elastic 删掉logstash-2018.02.02这个索引，
+>curl -XDELETE 'http://localhost:9200/.kibana' -u elastic 删掉.kibana这个索引，状态终于从red变成yellow。打开http://localhost:5601，终于正常了，过程真是血泪。.kibana这个索引是什么时候加进去的？
  
- 
+* elasticsearch启动时警告：<br>
+[2018-02-08T18:07:44,034][WARN ][o.e.b.BootstrapChecks    ] [MgFs-Nt] max file descriptors [4096] for elasticsearch process is too low, increase to at least [65536]<br>
+[2018-02-08T18:07:44,035][WARN ][o.e.b.BootstrapChecks    ] [MgFs-Nt] max virtual memory areas vm.max_map_count [65530] is too low, increase to at least [262144]<br>
+>根据https://www.elastic.co/guide/en/elasticsearch/reference/current/file-descriptors.html,先输入以下命令警告消除。
+```
+sudo su  
+ulimit -n 65536
+sysctl -w vm.max_map_count=262144 
+su vobile
+```
+
+>根据https://www.elastic.co/guide/en/elasticsearch/reference/current/vm-max-map-count.html，
+
+
 #### Kibana
 前端展示
 
@@ -188,7 +269,7 @@ https://www.elastic.co/downloads/x-pack<br>
  bin/elasticsearch-plugin install file:///path/to/file/x-pack-6.1.2.zip(optional)<br>
  bin/elasticsearch-plugin install x-pack<br>
  2.Config TLS/SSL<br>
- * 如果没有配置ssl，启动kibana有报错：![]( https://github.com/zjhgx/archecture_zjhgx/blob/master/ELK/no_ssl.png )
+ * 如果没有配置ssl，启动kibana有警告：![]( https://github.com/zjhgx/archecture_zjhgx/blob/master/ELK/no_ssl.png )
 
  3.Start Elasticsearch:bin/elasticsearch<br>
  4.Generate default passwords:bin/x-pack/setup-passwords auto  bin/x-pack/setup-passwords interactive<br>
