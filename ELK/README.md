@@ -65,7 +65,8 @@ ELK+Beats
 
 ###### 安装
 curl -L -O https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-6.1.2-linux-x86_64.tar.gz<br>
-tar xzvf filebeat-6.1.2-linux-x86_64.tar.gz
+tar xzvf filebeat-6.1.2-linux-x86_64.tar.gz<br>
+sudo ./filebeat -e -c filebeat.yml -d "publish" --strict.perms=false
 
 ###### 配置
 filebeat.yml
@@ -78,9 +79,6 @@ filebeat.prospectors:
 output.logstash:
   hosts: ["localhost:5044"]
 ```
-
-###### 运行
-sudo ./filebeat -e -c filebeat.yml -d "publish" --strict.perms=false
 
 #### Logstash
 Logstash用于提取需要的日志再存入Elasticsearch
@@ -137,12 +135,351 @@ grok pattern:%{SYNTAX:SEMANTIC} SEMANTIC:identifier you give to the piece of tex
 
 #### Elasticsearch
 ELK核心
+
 ###### 安装
 install jdk1.8<br>
 curl -L -O https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-6.1.2.tar.gz<br>
 tar -xvf elasticsearch-6.1.2.tar.gz<br>
 cd elasticsearch-6.1.2/bin<br>
 ./elasticsearch
+
+###### 基本概念
+* Index:  a collection of documents that have somewhat similar characteristics(这里和关系型数据库里的索引不同，类似于一个库)
+* 
+
+###### 基本用法
+* 和elastic交互：RESTful API(curl -X<VERB> '<PROTOCOL>://<HOST>:<PORT>/<PATH>?<QUERY_STRING>' -d '<BODY>'),例如计算集群中文档的数量
+```
+curl -XGET 'http://localhost:9200/_count?pretty' -d '
+{
+    "query": {
+        "match_all": {}
+    }
+}
+'
+返回
+{
+    "count" : 0,
+    "_shards" : {
+        "total" : 5,
+        "successful" : 5,
+        "failed" : 0
+    }
+}
+```
+* 索引文档(相当于SQL INSERT)
+```
+PUT /megacorp/employee/1 (curl -XPUT 的简体)
+{
+    "first_name" : "John",
+    "last_name" :  "Smith",
+    "age" :        25,
+    "about" :      "I love to go rock climbing",
+    "interests": [ "sports", "music" ]
+}
+```
+* 检索文档
+```
+GET /megacorp/employee/1(curl -XGET 的简体，得到ID=1的记录)
+返回
+{
+  "_index" :   "megacorp",
+  "_type" :    "employee",
+  "_id" :      "1",
+  "_version" : 1,
+  "found" :    true,
+  "_source" :  {
+      "first_name" :  "John",
+      "last_name" :   "Smith",
+      "age" :         25,
+      "about" :       "I love to go rock climbing",
+      "interests":  [ "sports", "music" ]
+  }
+}
+------------------------------------------------------
+GET /megacorp/employee/_search(得到用户所需的全部信息。)
+返回
+{
+   "took":      6,
+   "timed_out": false,
+   "_shards": { ... },
+   "hits": {
+      "total":      3,
+      "max_score":  1,
+      "hits": [
+        {
+            "_index":         "megacorp",
+            "_type":          "employee",
+            "_id":            "3",
+            "_score":         1,
+            "_source": {
+               "first_name":  "Douglas",
+               "last_name":   "Fir",
+               "age":         35,
+               "about":       "I like to build cabinets",
+               "interests": [ "forestry" ]
+            }
+         },      
+         {
+            "_index":         "megacorp",
+            "_type":          "employee",
+            "_id":            "1",
+            "_score":         1,
+            "_source": {
+               "first_name":  "John",
+               "last_name":   "Smith",
+               "age":         25,
+               "about":       "I love to go rock climbing",
+               "interests": [ "sports", "music" ]
+            }
+         },
+         {
+            "_index":         "megacorp",
+            "_type":          "employee",
+            "_id":            "2",
+            "_score":         1,
+            "_source": {
+               "first_name":  "Jane",
+               "last_name":   "Smith",
+               "age":         32,
+               "about":       "I like to collect rock albums",
+               "interests": [ "music" ]
+            }
+         }
+      ]
+   }
+}
+------------------------------------------------------
+GET /megacorp/employee/_search?q=last_name:Smith(返回所有的Smith)
+返回
+{
+   ...
+   "hits": {
+      "total":      2,
+      "max_score":  0.30685282,
+      "hits": [
+         {
+            ...
+            "_source": {
+               "first_name":  "John",
+               "last_name":   "Smith",
+               "age":         25,
+               "about":       "I love to go rock climbing",
+               "interests": [ "sports", "music" ]
+            }
+         },
+         {
+            ...
+            "_source": {
+               "first_name":  "Jane",
+               "last_name":   "Smith",
+               "age":         32,
+               "about":       "I like to collect rock albums",
+               "interests": [ "music" ]
+            }
+         }
+      ]
+   }
+}
+------------------------------------------------------
+使用查询表达式:
+GET /megacorp/employee/_search
+{
+    "query" : {
+        "match" : {
+            "last_name" : "Smith"
+        }
+    }
+}
+返回同上
+------------------------------------------------------
+使用过滤器:
+GET /megacorp/employee/_search
+{
+    "query" : {
+        "bool": {
+            "must": {
+                "match" : {
+                    "last_name" : "smith" 
+                }
+            },
+            "filter": {
+                "range" : {
+                    "age" : { "gt" : 30 } 
+                }
+            }
+        }
+    }
+}
+返回
+{
+   ...
+   "hits": {
+      "total":      1,
+      "max_score":  0.30685282,相关性得分
+      "hits": [
+         {
+            ...
+            "_source": {
+               "first_name":  "Jane",
+               "last_name":   "Smith",
+               "age":         32,
+               "about":       "I like to collect rock albums",
+               "interests": [ "music" ]
+            }
+         }
+      ]
+   }
+}
+------------------------------------------------------
+全文检索
+GET /megacorp/employee/_search
+{
+    "query" : {
+        "match" : {
+            "about" : "rock climbing"
+        }
+    }
+}
+返回
+{
+   ...
+   "hits": {
+      "total":      2,
+      "max_score":  0.16273327,
+      "hits": [
+         {
+            ...
+            "_score":         0.16273327, 
+            "_source": {
+               "first_name":  "John",
+               "last_name":   "Smith",
+               "age":         25,
+               "about":       "I love to go rock climbing",
+               "interests": [ "sports", "music" ]
+            }
+         },
+         {
+            ...
+            "_score":         0.016878016, 
+            "_source": {
+               "first_name":  "Jane",
+               "last_name":   "Smith",
+               "age":         32,
+               "about":       "I like to collect rock albums",
+               "interests": [ "music" ]
+            }
+         }
+      ]
+   }
+}
+------------------------------------------------------
+短语搜索
+GET /megacorp/employee/_search
+{
+    "query" : {
+        "match_phrase" : {
+            "about" : "rock climbing"
+        }
+    }
+}
+返回
+{
+   ...
+   "hits": {
+      "total":      1,
+      "max_score":  0.23013961,
+      "hits": [
+         {
+            ...
+            "_score":         0.23013961,
+            "_source": {
+               "first_name":  "John",
+               "last_name":   "Smith",
+               "age":         25,
+               "about":       "I love to go rock climbing",
+               "interests": [ "sports", "music" ]
+            }
+         }
+      ]
+   }
+}
+------------------------------------------------------
+高亮搜索
+GET /megacorp/employee/_search
+{
+    "query" : {
+        "match_phrase" : {
+            "about" : "rock climbing"
+        }
+    },
+    "highlight": {
+        "fields" : {
+            "about" : {}
+        }
+    }
+}
+返回
+{
+   ...
+   "hits": {
+      "total":      1,
+      "max_score":  0.23013961,
+      "hits": [
+         {
+            ...
+            "_score":         0.23013961,
+            "_source": {
+               "first_name":  "John",
+               "last_name":   "Smith",
+               "age":         25,
+               "about":       "I love to go rock climbing",
+               "interests": [ "sports", "music" ]
+            },
+            "highlight": {
+               "about": [
+                  "I love to go <em>rock</em> <em>climbing</em>" 
+               ]
+            }
+         }
+      ]
+   }
+}
+------------------------------------------------------
+聚合
+GET /megacorp/employee/_search
+{
+  "aggs": {
+    "all_interests": {
+      "terms": { "field": "interests" }
+    }
+  }
+}
+返回
+{
+   ...
+   "hits": { ... },
+   "aggregations": {
+      "all_interests": {
+         "buckets": [
+            {
+               "key":       "music",
+               "doc_count": 2
+            },
+            {
+               "key":       "forestry",
+               "doc_count": 1
+            },
+            {
+               "key":       "sports",
+               "doc_count": 1
+            }
+         ]
+      }
+   }
+}
+
+```
 
 ###### 一些命令
 *  List All Indices:curl 'localhost:9200/_cat/indices?v' --- curl -XGET -u elastic 'localhost:9200/_cat/indices?v&pretty'<br>
