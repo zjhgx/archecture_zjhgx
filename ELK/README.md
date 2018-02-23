@@ -144,8 +144,17 @@ cd elasticsearch-6.1.2/bin<br>
 ./elasticsearch
 
 ###### 基本概念
-* Index:  a collection of documents that have somewhat similar characteristics(这里和关系型数据库里的索引不同，类似于一个库)
-* 
+* Cluster: a collection of one or more nodes (servers) that together holds your entire data and provides federated indexing and search capabilities across all nodes
+* Node: single server that is part of your cluster, stores your data, and participates in the cluster’s indexing and search capabilities
+* Index: a collection of documents that have somewhat similar characteristics(这里和关系型数据库里的索引不同，类似于一个库)
+* Type: Indices created in Elasticsearch 6.0.0 or later may only contain a single mapping type. Indices created in 5.x with multiple mapping types will continue to function as before in Elasticsearch 6.x. Mapping types will be completely removed in Elasticsearch 7.0.0.
+* Document: a basic unit of information that can be indexed
+* Shards&Replica: subdivide your index into multiple pieces called shards for large amount of data on the disk of a single node.Each shard is in itself a fully-functional and independent "index" that can be hosted on any node in the cluster.make one or more copies of your index’s shards into what are called replica shards, or replicas for short(high availability,failover mechanism).
+	* It allows you to horizontally split/scale your content volume 
+	* It allows you to distribute and parallelize operations across shards (potentially on multiple nodes) thus increasing performance/throughput
+	* a replica shard is never allocated on the same node as the original/primary shard that it was copied from. 
+	* It allows you to scale out your search volume/throughput since searches can be executed on all replicas in parallel.
+	* To summarize, each index can be split into multiple shards. An index can also be replicated zero (meaning no replicas) or more times. Once replicated, each index will have primary shards (the original shards that were replicated from) and replica shards (the copies of the primary shards). 
 
 ###### 基本用法
 * 和elastic交互：RESTful API(curl -X<VERB> '<PROTOCOL>://<HOST>:<PORT>/<PATH>?<QUERY_STRING>' -d '<BODY>'),例如计算集群中文档的数量
@@ -177,6 +186,9 @@ PUT /megacorp/employee/1 (curl -XPUT 的简体)
     "about" :      "I love to go rock climbing",
     "interests": [ "sports", "music" ]
 }
+megacorp:index
+employee:type
+1:ID
 ```
 * 检索文档
 ```
