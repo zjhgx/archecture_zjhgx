@@ -59,6 +59,8 @@ ELK是Elastic的三个开源产品，其中Logstash（server-side data processin
 ELK+Beats
 流程图：
 ![]( https://github.com/zjhgx/archecture_zjhgx/blob/master/ELK/%E6%97%A5%E5%BF%97%E7%9B%91%E6%8E%A7%E6%B5%81%E7%A8%8B.png )
+注意点：<br>
+* 对于各应用最好采用统一的日志格式，比如时间，有的应用是HH:mm:ss.SSS，而有的是yyyy-MM-dd HH:mm:ss.SSS，这样会给日志解析带来不便
 
 #### Filebeat
 用于日志收集和传输：reliability and low latency
@@ -66,7 +68,30 @@ ELK+Beats
 ###### 安装
 curl -L -O https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-6.1.2-linux-x86_64.tar.gz<br>
 tar xzvf filebeat-6.1.2-linux-x86_64.tar.gz<br>
-sudo ./filebeat -e -c filebeat.yml -d "publish" --strict.perms=false
+sudo ./filebeat -e -c filebeat.yml -d "publish" --strict.perms=false<br>
+启动成功：
+```
+2018/02/23 12:40:33.674269 processor.go:275: DBG [publish] Publish event: {
+  "@timestamp": "2018-02-23T12:40:33.674Z",
+  "@metadata": {
+    "beat": "filebeat",
+    "type": "doc",
+    "version": "6.1.2"
+  },
+  "prospector": {
+    "type": "log"
+  },
+  "beat": {
+    "name": "vobile-ThinkPad-X1-Carbon-2nd",
+    "hostname": "vobile-ThinkPad-X1-Carbon-2nd",
+    "version": "6.1.2"
+  },
+  "source": "/home/vobile/Downloads/logstash-tutorial-dataset",
+  "offset": 24464,
+  "message": "86.1.76.62 - - [04/Jan/2015:05:30:37 +0000] \"GET /style2.css HTTP/1.1\" 200 4877 \"http://www.semicomplete.com/projects/xdotool/\" \"Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20140205 Firefox/24.0 Iceweasel/24.3.0\""
+}
+
+```
 
 ###### 配置
 filebeat.yml
@@ -75,7 +100,7 @@ filebeat.prospectors:
 - type: log
   enabled: true
   paths:
-    - /path/to/file/logstash-tutorial.log 
+    - /home/vobile/bin/apache-tomcat-8.0.37/logs/catalina.out 
 output.logstash:
   hosts: ["localhost:5044"]
 ```
@@ -101,7 +126,7 @@ input {
 # optional.
 filter {
     grok {
-        match => { "message" => "%{HTTPD_COMMONLOG}"}
+        match => { "message" => "%{JAVASTACKTRACEPART}"}
     }
 
     geoip {
@@ -111,18 +136,24 @@ filter {
 
 output {
 #       stdout { codec => rubydebug }
-        elasticsearch {
-                hosts => [ "localhost:9200" ]
+		#如果解析失败说明不是需要的日志
+        if "_grokparsefailure" not in [tags] {
+                elasticsearch {
+                        hosts => [ "localhost:9200" ]
+                        user => "elastic"
+                        password => "*******"
+                }
         }
+
 }
 
 ```
-
+setting value type:
 ###### 运行
 检测配置：bin/logstash -f ../conf/pipline.conf --config.test_and_exit<br>
 运行：bin/logstash -f ../conf/pipline.conf --config.reload.automatic
 
-###### 过滤
+###### 日志解析
 Grok filter plugin:Parse arbitrary text and structure it.<br>
 Logstash ships with about 120 patterns by default:https://github.com/logstash-plugins/logstash-patterns-core/blob/master/patterns/grok-patterns<br> 
 building patterns to match your logs:http://grokdebug.herokuapp.com and http://grokconstructor.appspot.com/<br>
@@ -496,7 +527,7 @@ GET /megacorp/employee/_search
 ###### 一些命令
 *  List All Indices:curl 'localhost:9200/_cat/indices?v' --- curl -XGET -u elastic 'localhost:9200/_cat/indices?v&pretty'<br>
 * 集群健康状态： curl -XGET 'http://localhost:9200/_cluster/health?pretty' -u elastic
-* 一个index库健康状态： curl -XGET 'http://localhost:8200/_cluster/health/zh?pretty'
+* 一个index库健康状态： curl -XGET 'http://localhost:9200/_cluster/health/zh?pretty'
 
 ###### 遇到的问题
 * FORBIDDEN/12/index read-only / allow delete (api)  flood stage disk watermark: 
@@ -603,7 +634,10 @@ cd kibana-6.1.2-linux-x86_64/<br>
 
 localhost:5601/status
 
-####
+###### 使用
+1. load data
+2. define index patterns
+3. 
 
 #### X-Pack     
 X-Pack提供了ELK的增强工具，报警是其中之一功能，按照官网的说法，可以定义一些watcher scheduler定时在Elasticsearch中检索，根据结果和触发条件选择Action发出提醒<br>
