@@ -687,7 +687,7 @@ https://www.elastic.co/downloads/x-pack<br>
 * LAYERED SECURITY:Field- and document-level security
 * AUDIT LOGGING:easily maintain a complete record of all system and user activity
 
-```
+
 
 ###### Alerting on Cluster and Index Events
 * Schedule: A schedule for running a query and checking the condition. 
