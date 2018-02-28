@@ -126,7 +126,7 @@ input {
 # optional.
 filter {
     grok {
-        match => { "message" => "%{JAVASTACKTRACEPART}"}
+        match => {  "message" => ["%{JAVASTACKTRACEPART}","Caused by: (?<cause_exception>.*):(?<cause_errormsg>.*)","(?<exception>((?<!Exception).)*Exception):(?<errormsg>.*)","%{HOUR}:?%{MINUTE}(?::?%{SECOND}) \[(?<thread_id>.*)\] %{LOGLEVEL:level} %{JAVACLASS:class} - (?<exception_msg>.*)"]}
     }
 
     geoip {
@@ -641,7 +641,15 @@ localhost:5601/status
 
 #### X-Pack     
 X-Pack提供了ELK的增强工具，报警是其中之一功能，按照官网的说法，可以定义一些watcher scheduler定时在Elasticsearch中检索，根据结果和触发条件选择Action发出提醒<br>
-部分功能需要付费：https://www.elastic.co/subscriptions<br>
+主要功能：<br>
+* Security
+* Monitoring
+* Alerting and Notification
+* Reporting
+* Graph
+* Machine Learning
+
+部分功能要升级到高级的licence,试用一个月，需要付费：https://www.elastic.co/subscriptions<br>
 [info][license][xpack] Imported license information from Elasticsearch for the [monitoring] cluster: mode: trial | status: active | expiry date: 2018-03-08T20:40:42+08:00
 
 ###### 安装
@@ -671,6 +679,7 @@ https://www.elastic.co/downloads/x-pack<br>
  * Navigate to Kibana at http://localhost:5601/<br>
  * Log in as the built-in elastic user with the auto-generated password from step 3<br>
  
+ 
 ###### security
 * AUTHENTICATION:password
 * AUTHORIZATION:Manage Users and Roles
@@ -679,6 +688,19 @@ https://www.elastic.co/downloads/x-pack<br>
 * AUDIT LOGGING:easily maintain a complete record of all system and user activity
 
 ```
+
+###### Alerting on Cluster and Index Events
+* Schedule: A schedule for running a query and checking the condition. 
+* Query: The query to run as input to the condition. Watches support the full Elasticsearch query language, including aggregations. 
+* Condition: A condition that determines whether or not to execute the actions. 
+* Actions: One or more actions, such as sending email, pushing data to 3rd party systems through a webhook, or indexing the results of the query. 
+
+####### api
+* put watch API(registers a new watch in Watcher)
+```
+PUT _xpack/watcher/watch/<watch_id>
+```
+
 PUT _xpack/watcher/watch/log_error_watch
 {
   "trigger" : {
