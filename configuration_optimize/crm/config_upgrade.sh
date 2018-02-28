@@ -32,7 +32,7 @@ for i in $(seq $file_count) ; do
 	
 	#检查changes.properties的完整性/命名正确性
 	#while read line
-	for propertiesline in $(awk '/^[^-{2}]/ {print}' /tmp/$$);do
+	for propertiesline in $(awk --re-interval '/^[^-{2}]/ {print}' /tmp/$$);do
 		if  ! `grep -q "$propertiesline" "$WEB_APP_PATH/$path"`; then
 			echo "[Error]: can not find $propertiesline in \"$WEB_APP_PATH/$path\"" 
 			EXIT_FLAG="1"
@@ -54,7 +54,7 @@ for i in $(seq $file_count) ; do
 		exit 1
 	fi
 	#合并changes.properties
-	for key in $(awk -F "=|-{2}" '/^-{2}/{print $2}/^[^-{2}]/{print $1}' /tmp/$$) ; do
+	for key in $(awk --re-interval -F "=|-{2}" '/^-{2}/{print $2}/^[^-{2}]/{print $1}' /tmp/$$) ; do
 		line=$(awk '/'$key'[ \t]*=/ {print;exit}' /tmp/$$)
 		echo $line
 		
@@ -64,13 +64,14 @@ for i in $(seq $file_count) ; do
 		if [ "$change_variable_part" != $change_value ]; then
                         exist_config=$(grep  "^$key[ \t]*=" "$CONFIG_FILE_PATH/$CONFIG_FILE" | head -1)
 			#delete config
-                        if [ $(echo $line | awk '/^-{2}/ {print}') ]; then
+                        if [ $(echo $line | awk --re-interval '/^-{2}/ {print}') ]; then
 				if [ "$exist_config" ]; then
 	                                sed -i "/^$key[ \t]*=/d" "$CONFIG_FILE_PATH/$CONFIG_FILE"
          	                        echo "[Info]: $key项已从$CONFIG_FILE_PATH/$CONFIG_FILE中删除"
                 	                continue
 				else
-					echo "[Warning]: $key项在$CONFIG_FILE_PATH/$CONFIG_FILE中不存在，无需删除"	
+					echo "[Warning]: $key项在$CONFIG_FILE_PATH/$CONFIG_FILE中不存在，无需删除"
+					continue	
 				fi
                         fi
               	 	# replace old config
@@ -101,7 +102,7 @@ for i in $(seq $file_count) ; do
 		#如果是常量则合并到static_config.properties
                         exist_config=$(grep  "^$key[ \t]*=" "$CONFIG_FILE_PATH/$STATIC_CONFIG_FILE" | head -1)
 
-	        	if [ $(echo $line | awk '/^-{2}/ {print}') ]; then
+	        	if [ $(echo $line | awk --re-interval '/^-{2}/ {print}') ]; then
 				if [ "$exist_config" ]; then
                                		sed -i "/^$key[ \t]*=/d" "$CONFIG_FILE_PATH/$STATIC_CONFIG_FILE"       
                                 	echo "[Info]: $key项已从$CONFIG_FILE_PATH/$STATIC_CONFIG_FILE中删除"
