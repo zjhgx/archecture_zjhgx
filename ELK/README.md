@@ -687,8 +687,6 @@ https://www.elastic.co/downloads/x-pack<br>
 * LAYERED SECURITY:Field- and document-level security
 * AUDIT LOGGING:easily maintain a complete record of all system and user activity
 
-
-
 ###### Alerting on Cluster and Index Events
 * Schedule: A schedule for running a query and checking the condition. 
 * Query: The query to run as input to the condition. Watches support the full Elasticsearch query language, including aggregations. 
@@ -696,16 +694,14 @@ https://www.elastic.co/downloads/x-pack<br>
 * Actions: One or more actions, such as sending email, pushing data to 3rd party systems through a webhook, or indexing the results of the query. 
 
 ####### api
-* put watch API(registers a new watch in Watcher)
+* Put Watch API(registers a new watch in Watcher)
 ```
+Request: 
 PUT _xpack/watcher/watch/<watch_id>
-```
 
 PUT _xpack/watcher/watch/log_error_watch
 {
-  "trigger" : {
-    "schedule" : { "interval" : "10s" } 
-  },
+  "trigger" : { "schedule" : { "interval" : "20s" }},
   "input" : {
     "search" : {
       "request" : {
@@ -717,8 +713,110 @@ PUT _xpack/watcher/watch/log_error_watch
         }
       }
     }
+  },
+  "condition" : {
+    "compare" : { "ctx.payload.hits.total" : { "gt" : 0 }}
+  },
+  "actions" : {
+    "send_email" : { 
+      "email" : { 
+      	"from": "hugaoxiang@ichuangshun.com",
+        "to" : "zjhgx163@163.com",
+        "subject" : "Watcher Notification", 
+        "body" : "{{ctx.payload.hits.total}} error logs found" 
+      }
+    }
   }
 }
+```
+```
+* Get Watch API
+```
+Request: 
+GET _xpack/watcher/watch/<watch_id>
+
+Response:
+{
+  "found": true,
+  "_id": "my_watch",
+  "status": { 
+    "version": 1,
+    "state": {
+      "active": true,
+      "timestamp": "2015-05-26T18:21:08.630Z"
+    },
+    "actions": {
+      "test_index": {
+        "ack": {
+          "timestamp": "2015-05-26T18:21:08.630Z",
+          "state": "awaits_successful_execution"
+        }
+      }
+    }
+  },
+  "watch": {
+    "input": {
+      "simple": {
+        "payload": {
+          "send": "yes"
+        }
+      }
+    },
+    "condition": {
+      "always": {}
+    },
+    "trigger": {
+      "schedule": {
+        "hourly": {
+          "minute": [0, 5]
+        }
+      }
+    },
+    "actions": {
+      "test_index": {
+        "index": {
+          "index": "test",
+          "doc_type": "test2"
+        }
+      }
+    }
+  }
+}
+
+```
+* Delete Watch API
+```
+Request:
+DELETE _xpack/watcher/watch/<watch_id>
+
+Response:
+{
+   "found": true,
+   "_id": "my_watch",
+   "_version": 2
+}
+```
+* Execute Watch API
+```
+Request:
+POST _xpack/watcher/watch/<watch_id>/_execute
+{
+  "trigger_data" : { 
+     "triggered_time" : "now",
+     "scheduled_time" : "now"
+  },
+  "alternative_input" : { 
+    "foo" : "bar"
+  },
+  "ignore_condition" : true, 
+  "action_modes" : {
+    "my-action" : "force_simulate" 
+  },
+  "record_execution" : true 
+}
+
+Response:
+
 ```
 
 ##### Kafka
