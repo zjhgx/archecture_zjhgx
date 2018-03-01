@@ -1,4 +1,4 @@
-#!/bin/bash
+
 
 admlogs='/var/log/tourongjia_crm.log'
 tompath='/usr/local/javaapp/tomcat8080'
@@ -37,13 +37,10 @@ fi
 cat /dev/null >/tmp/gitlog.txt
 source /etc/profile
 
-result=$(./config_upgrade.sh)
-if [ $result -eq 3 ] ;then
-	read -p "配置已合并,请确认配置正确后回车" CONFIRM
-	if [  "$CONFIRM" ] ; then
-		echo "请修改配置文件后重新执行，程序退出"
-		exit 1
-	fi
+/bin/zxlh/config_upgrade.sh
+
+if [ $? -ne 0 ]; then
+	exit 1	
 fi
 \cp -f /home/configbak/tourongjia_crm/test_config.properties             /home/JAVACRM/src/profiles	
 
@@ -51,6 +48,16 @@ mvn clean package -P test -DskipTests=true >>/tmp/gitlog.txt 2>>/tmp/gitlog.txt
 cat /tmp/gitlog.txt |tee -a $admlogs
 
 egrep -q 'BUILD SUCCESS' /tmp/gitlog.txt
+
+blank_count=$(awk '/^[ \t]+|[ \t]+$|\r/' "/home/JAVACRM/target/trj-crm/WEB-INF/classes/application.properties" | wc -l )
+echo $blank_count
+if [ $blank_count -gt 0 ]; then
+                sed -i -e 's/^[ \t]*//g' "/home/JAVACRM/target/trj-crm/WEB-INF/classes/application.properties"
+                sed -i -e 's/[ \t]*$//g' "/home/JAVACRM/target/trj-crm/WEB-INF/classes/application.properties"
+                sed -i -e 's/\r//g' "/home/JAVACRM/target/trj-crm/WEB-INF/classes/application.properties"
+                echo "[Warning]: /home/JAVACRM/target/trj-crm/WEB-INF/classes/application.properties上配置项发现非法字符，已删除"
+fi
+
 
 if [ $? -eq 0 ]
  then
@@ -99,7 +106,7 @@ fi
 
 \cp -f /home/configbak/tourongjia_crm/web.xml              $tompath/webapps/ROOT/WEB-INF/
 
-\cp -f /home/configbak/tourongjia_crm/{attachment-config.xml} $tompath/webapps/ROOT/WEB-INF/classes/
+\cp -f /home/configbak/tourongjia_crm/attachment-config.xml $tompath/webapps/ROOT/WEB-INF/classes/
 
 \cp -f /home/configbak/tourongjia_crm/dubbo/*              $tompath/webapps/ROOT/WEB-INF/classes/dubbo/
 
