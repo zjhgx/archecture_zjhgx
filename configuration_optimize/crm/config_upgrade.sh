@@ -145,7 +145,18 @@ if [ $MANUAL_FLAG -eq 1 ]; then
 	exit 3
 fi
 
- #检查合并后配置文件的完整性	
+#检查合并后还有没有未修改成实际值的配置值
+for config in $(awk '/^[^#][^ \t]+/' "$CONFIG_FILE_PATH/$CONFIG_FILE")  ; do
+	key=$(echo $config | awk -F= '{gsub(/^( |\t)*|( |\t)*$/,"",$1);print $1}')
+	value=$(echo $config | awk -F= '{gsub(/^( |\t)*|( |\t)*$/,"",$2);print $2}')
+	variable_part=`echo $value | sed 's/^\${\([^ |\t]*\)}/\1/g'`
+	if [ "$variable_part" != "$value" ]; then
+		echo  "[Error]: $CONFIG_FILE_PATH/$CONFIG_FILE配置项$key未修改成实际值,请检查"
+		exit 1
+	fi
+done
+
+#检查合并后配置文件的完整性	
 for file in $(ls $WEB_APP_PATH | grep '.properties$') ; do
 	for config in $(awk '/^[^#][^ \t]+/' "$WEB_APP_PATH/$file")  ; do
 		key=$(echo $config | awk -F= '{gsub(/^( |\t)*|( |\t)*$/,"",$1);print $1}')
@@ -155,13 +166,6 @@ for file in $(ls $WEB_APP_PATH | grep '.properties$') ; do
 			variable_part=`echo $value | sed 's/^\${\([^ |\t]*\)}/\1/g'`
 			if [ "$variable_part" != "$value" ]; then
 				echo  "[Error]: $CONFIG_FILE_PATH/$CONFIG_FILE不完整,$key项缺失,请检查"
-				exit 1
-			fi
-		else
-			value=$(echo $t | awk -F= '{gsub(/^( |\t)*|( |\t)*$/,"",$2);print $2}')
-			variable_part=`echo $value | sed 's/^\${\([^ |\t]*\)}/\1/g'`
-			if [ "$variable_part" != "$value" ]; then
-				echo  "[Error]: $CONFIG_FILE_PATH/$CONFIG_FILE配置项$key未修改成实际值,请检查"
 				exit 1
 			fi
 
