@@ -705,10 +705,10 @@ PUT _xpack/watcher/watch/log_error_watch
   "input" : {
     "search" : {
       "request" : {
-        "indices" : [ "logs" ],
+        "indices" : [ "logstash-2018.03.01" ],
         "body" : {
           "query" : {
-            "match" : { "message": "error" }
+            "match" : { "level": "ERROR" }
           }
         }
       }
@@ -723,13 +723,13 @@ PUT _xpack/watcher/watch/log_error_watch
       	"from": "hugaoxiang@ichuangshun.com",
         "to" : "zjhgx163@163.com",
         "subject" : "Watcher Notification", 
-        "body" : "{{ctx.payload.hits.total}} error logs found" 
+        "body" : "{{message}{ctx.payload.hits.total}} error logs found" 
       }
     }
   }
 }
 ```
-```
+
 * Get Watch API
 ```
 Request: 
@@ -819,5 +819,34 @@ Response:
 
 ```
 
+####### Email Actions
+Sending Email from Amazon SES<br>
+1.verify email address or email domain:<br> 
+2.create your SMTP credentials<br>
+目前只能发送email到已经认证过的地址<br>
+https://console.aws.amazon.com/ses/home?region=us-east-1#verified-senders-email<br>
+* 配置
+```
+xpack.notification.email.account:
+    ses_account:
+        smtp:
+            auth: true
+            starttls.enable: true
+            starttls.required: true
+            host: email-smtp.us-east-1.amazonaws.com
+            port: 587
+            user: AKIAIN3TN53NLWEUUUGA
+            password: AulAaEep1p63NIyl/lmg4bYSguZ3Y7tpayufPpkcglly
+
+```
+user和password是生成的SMTP credentials
+
 ##### Kafka
 如果数据量大，可以加入Kafka
+
+## TODO
+* 多个节点，主分片，备分片
+* logstash传过来的的每一天一个index？
+* 多个数据源区分
+* 报警策略：新产生的错误才报警？历史的错误忽略
+* 异常的日志需要合并保存到ES，目前以行为单位查看起来不是很完整
