@@ -94,13 +94,24 @@ sudo ./filebeat -e -c filebeat.yml -d "publish" --strict.perms=false<br>
 ```
 
 ###### 配置
-filebeat.yml
+filebeat.yml,需要把多行异常信息的Event合并成一个Event
 ```yml
 filebeat.prospectors:
 - type: log
   enabled: true
   paths:
     - /home/vobile/bin/apache-tomcat-8.0.37/logs/catalina.out 
+ # The regexp Pattern that has to be matched. The example pattern matches all lines starting with [
+  multiline.pattern: '^%{HOUR}:?%{MINUTE}(?::?%{SECOND})'
+
+  # Defines if the pattern set under pattern should be negated or not. Default is false.
+  multiline.negate: true
+
+  # Match can be set to "after" or "before". It is used to define if lines should be append to a pattern
+  # that was (not) matched before or after or as long as a pattern is not matched based on negate.
+  # Note: After is the equivalent to previous and before is the equivalent to to next in Logstash
+  multiline.match: after
+  
 output.logstash:
   hosts: ["localhost:5044"]
 ```
@@ -126,7 +137,7 @@ input {
 # optional.
 filter {
     grok {
-        match => {  "message" => ["%{JAVASTACKTRACEPART}","Caused by: (?<cause_exception>.*):(?<cause_errormsg>.*)","(?<exception>((?<!Exception).)*Exception):(?<errormsg>.*)","%{HOUR}:?%{MINUTE}(?::?%{SECOND}) \[(?<thread_id>.*)\] %{LOGLEVEL:level} %{JAVACLASS:class} - (?<exception_msg>.*)"]}
+        match => {  "message" => "%{HOUR}:?%{MINUTE}(?::?%{SECOND}) \[(?<thread_id>.*)\] %{LOGLEVEL:level} %{JAVACLASS:logger} - (?<exception_msg>((?<!\n).)*)\n(?<exception>((?<!Exception).)*Exception):(?<errormsg>((?<!\n\t).)*)\n\t%{JAVASTACKTRACEPART}(?<stack_trace>((?<!Caused by).)*)\n(?<causedby_exception>Caused by:.*)"}
     }
 
     geoip {
