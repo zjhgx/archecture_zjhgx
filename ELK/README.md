@@ -704,7 +704,7 @@ https://www.elastic.co/downloads/x-pack<br>
 * Condition: A condition that determines whether or not to execute the actions. 
 * Actions: One or more actions, such as sending email, pushing data to 3rd party systems through a webhook, or indexing the results of the query. 
 
-####### api
+###### api
 * Put Watch API(registers a new watch in Watcher)
 ```
 Request: 
@@ -830,7 +830,7 @@ Response:
 
 ```
 
-####### Email Actions
+###### Email Actions
 Sending Email from Amazon SES<br>
 1.verify email address or email domain:<br> 
 2.create your SMTP credentials<br>
