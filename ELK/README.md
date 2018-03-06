@@ -102,7 +102,9 @@ filebeat.prospectors:
   paths:
     - /home/vobile/bin/apache-tomcat-8.0.37/logs/catalina.out 
  # The regexp Pattern that has to be matched. The example pattern matches all lines starting with [
-  multiline.pattern: '^%{HOUR}:?%{MINUTE}(?::?%{SECOND})'
+ # multiline.pattern: '^%{HOUR}:?%{MINUTE}(?::?%{SECOND})'
+ # TOMCAT_DATESTAMP 20%{YEAR}-%{MONTHNUM}-%{MONTHDAY} %{HOUR}:?%{MINUTE}(?::?%{SECOND}) %{ISO8601_TIMEZONE}不支持啊
+   multiline.pattern: '^[0-9]{4}-[0-9]{2}-[0-9]{2}'
 
   # Defines if the pattern set under pattern should be negated or not. Default is false.
   multiline.negate: true
@@ -111,13 +113,13 @@ filebeat.prospectors:
   # that was (not) matched before or after or as long as a pattern is not matched based on negate.
   # Note: After is the equivalent to previous and before is the equivalent to to next in Logstash
   multiline.match: after
-  
+name: java-1  
 output.logstash:
   hosts: ["localhost:5044"]
 ```
 
 #### Logstash
-Logstash用于提取需要的日志再存入Elasticsearch
+Logstash用于提取需要的日志再存入Elasticsearch,其过程就是把日志按格式解析成一个一个字段，然后存入ES可以利用ES根据条件搜索这些字段.
 
 ###### 安装
 curl -L -O https://artifacts.elastic.co/downloads/logstash/logstash-6.1.2.tar.gz<br>
@@ -137,7 +139,11 @@ input {
 # optional.
 filter {
     grok {
-        match => {  "message" => "%{HOUR}:?%{MINUTE}(?::?%{SECOND}) \[(?<thread_id>.*)\] %{LOGLEVEL:level} %{JAVACLASS:logger} - (?<exception_msg>((?<!\n).)*)\n(?<exception>((?<!Exception).)*Exception):(?<errormsg>((?<!\n\t).)*)\n\t%{JAVASTACKTRACEPART}(?<stack_trace>((?<!Caused by).)*)\n(?<causedby_exception>Caused by:.*)"}
+#               "message" => ["%{JAVASTACKTRACEPART}","Caused by: (?<cause_exception>.*):(?<cause_errormsg>.*)","(?<exception>((?<!Exception).)*Exception):(?<errormsg>.*)","%{HOUR}:?%{MINUTE}(?::?%{SECOND}) \[(?<thread_id>.*)\] %{LOGLEVEL:level} %{JAVACLASS:class} - (?<exception_msg>.*)"]
+#                "message" => "%{HOUR}:?%{MINUTE}(?::?%{SECOND}) \[(?<thread_id>.*)\] %{LOGLEVEL:level} %{JAVACLASS:logger} - (?<exception_msg>((?<!\\n).)*)\\n(?<exception>((?<!Exception).)*Exception):(?<errormsg>((?<!\\n\\t).)*)\\n\\t%{JAVASTACKTRACEPART}(?<strak_trace>((?<!Caused by).)*)\\n(?<causedby_exception>Caused by:.*)"
+#               "message" => ["%{HOUR}:?%{MINUTE}(?::?%{SECOND}) \[(?<thread_id>.*)\] %{LOGLEVEL:level} %{JAVACLASS:logger} - (?<exception_msg>((?<!\n).)*)\n(?<exception>((?<!Exception).)*Exception):(?<errormsg>((?<!\n\t).)*)\n\t%{JAVASTACKTRACEPART}(?<stack_trace>((?<!Caused by).)*)\n(?<causedby_exception>Caused by:.*)","^%{TIMESTAMP_ISO8601} \[(?<thread_id>.*)\] %{LOGLEVEL:level}: %{JAVACLASS:logger}#(?<method>.*) : \n(?<exception>.*Exception)\n\t%{JAVASTACKTRACEPART}(?<stack_trace>((?<!Caused by).)*)(?<causedby_exception>(Caused by:)?.*)"]
+                "message" => ["%{HOUR}:?%{MINUTE}(?::?%{SECOND}) \[(?<thread_id>.*)\] %{LOGLEVEL:level} %{JAVACLASS:logger} - (?<exception_msg>((?<!\n).)*)\n(?<exception>((?<!Exception).)*Exception):(?<errormsg>((?<!\n\t).)*)\n\t%{JAVASTACKTRACEPART}(?<stack_trace>((?<!Caused by).)*)\n(?<causedby_exception>Caused by:.*)?","^%{TIMESTAMP_ISO8601} \[(?<thread_id>.*)\] %{LOGLEVEL:level}: %{JAVACLASS:logger}#(?<method>.*) : (?<msg>((?<!\n).)*)?\n(?<exception>((?<!Exception).)*)(?<errormsg>((?<!\n).)*)?((?<!\tat).)*\n\t%{JAVASTACKTRACEPART}(?<stack_trace>(.(?!Caused by))*)\n(?<causedby_exception>Caused by.*)?"]
+        }
     }
 
     geoip {
@@ -160,6 +166,7 @@ output {
 
 ```
 setting value type:
+
 ###### 运行
 检测配置：bin/logstash -f ../conf/pipline.conf --config.test_and_exit<br>
 运行：bin/logstash -f ../conf/pipline.conf --config.reload.automatic
@@ -836,7 +843,7 @@ Sending Email from Amazon SES<br>
 2.create your SMTP credentials<br>
 目前只能发送email到已经认证过的地址<br>
 https://console.aws.amazon.com/ses/home?region=us-east-1#verified-senders-email<br>
-* 配置
+* 配置 elasticsearch.yml
 ```
 xpack.notification.email.account:
     ses_account:
