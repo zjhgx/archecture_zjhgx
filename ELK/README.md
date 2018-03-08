@@ -169,7 +169,53 @@ setting value type:
 
 ###### 运行
 检测配置：bin/logstash -f ../conf/pipline.conf --config.test_and_exit<br>
-运行：bin/logstash -f ../conf/pipline.conf --config.reload.automatic
+运行：bin/logstash -f ../conf/pipline.conf --config.reload.automatic<br>
+注：ES有执行脚本的能力，因安全因素，不能在root用户下运行，强行运行会报如下错误：<br>
+org.elasticsearch.bootstrap.StartupException: java.lang.RuntimeException: can not run elasticsearch as root<br>
+解决方案：<br>
+groupadd es #增加es组;useradd es -g es -p pwd          #增加es用户并附加到es组  chown -R es:es elasticsearch-6.2.2          #给目录权限 su es          #使用es用户  ./bin/elasticsearch -d          #后台运行es<br>
+
+外网访问<br>
+
+vi conf/elasticsearch.yml<br>
+
+修改network.host: 0.0.0.0<br>
+
+再次启动ES出现如下类似错误<br>
+
+ERROR: [3] bootstrap checks failed
+[1]: max number of threads [1024] for user [es] is too low, increase to at least [4096]
+[2]: max virtual memory areas vm.max_map_count [65530] is too low, increase to at least [262144]
+[3]: system call filters failed to install; check the logs and fix your configuration or disable system call filters at your own risk
+
+>[3] bootstrap checks failed<br>
+>[3]: system call filters failed to install; check the logs and fix your configuration or disable system call filters at your own risk<br>
+>原因：这是在因为Centos6不支持SecComp，而ES5.2.0默认bootstrap.system_call_filter为true进行检测，所以导致检测失败，失败后直接导致ES不能启动。
+>解决：在elasticsearch.yml中配置bootstrap.system_call_filter为false，注意要在Memory下面:
+bootstrap.memory_lock: false
+bootstrap.system_call_filter: false
+
+>[2]: max virtual memory areas vm.max_map_count [65530] is too low, increase to at least [262144]
+>解决：切换到root用户修改配置sysctl.conf 添加下面配置：vm.max_map_count=655360  并执行命令：sysctl -p
+
+>[1]: max number of threads [1024] for user [es] is too low, increase to at least [4096]
+>解决：切换到root用户，进入limits.d目录下修改配置文件。vi /etc/security/limits.d/90-nproc.conf 修改如下内容为： * soft nproc 4096  
+
+>max file descriptors [65535] for elasticsearch process is too low, increase to at least [65536]<br>
+>解决方案<br>
+>1、vi /etc/sysctl.conf<br>
+>设置fs.file-max=655350<br>
+>保存之后sysctl -p使设置生效<br>
+
+>2、vi /etc/security/limits.conf 新增<br>
+
+>* soft nofile 655350<br>
+
+>* hard nofile 655350<br>
+
+3、重新使用SSH登录，再次启动elasticsearch即可。<br>
+
+外网访问：serverip:9200/<br>
 
 ###### 日志解析
 Grok filter plugin:Parse arbitrary text and structure it.<br>
@@ -668,7 +714,7 @@ X-Pack提供了ELK的增强工具，报警是其中之一功能，按照官网�
 * Machine Learning
 
 部分功能要升级到高级的licence,试用一个月，需要付费：https://www.elastic.co/subscriptions<br>
-[info][license][xpack] Imported license information from Elasticsearch for the [monitoring] cluster: mode: trial | status: active | expiry date: 2018-03-08T20:40:42+08:00
+启动ES日志:[info][license][xpack] Imported license information from Elasticsearch for the [monitoring] cluster: mode: trial | status: active | expiry date: 2018-03-08T20:40:42+08:00
 
 ###### 安装
 https://www.elastic.co/downloads/x-pack<br>
@@ -710,6 +756,8 @@ https://www.elastic.co/downloads/x-pack<br>
 * Query: The query to run as input to the condition. Watches support the full Elasticsearch query language, including aggregations. 
 * Condition: A condition that determines whether or not to execute the actions. 
 * Actions: One or more actions, such as sending email, pushing data to 3rd party systems through a webhook, or indexing the results of the query. 
+
+###### watcher
 
 ###### api
 * Put Watch API(registers a new watch in Watcher)
