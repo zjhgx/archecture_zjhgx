@@ -171,6 +171,36 @@ setting value type:
 ###### 运行
 检测配置：bin/logstash -f ../conf/pipline.conf --config.test_and_exit<br>
 运行：bin/logstash -f ../conf/pipline.conf --config.reload.automatic<br>
+
+
+###### 日志解析
+Grok filter plugin:Parse arbitrary text and structure it.<br>
+Logstash ships with about 120 patterns by default:https://github.com/logstash-plugins/logstash-patterns-core/blob/master/patterns/grok-patterns<br> 
+building patterns to match your logs:http://grokdebug.herokuapp.com and http://grokconstructor.appspot.com/<br>
+grok pattern:%{SYNTAX:SEMANTIC} SEMANTIC:identifier you give to the piece of text being matched.<br>
+>55.3.244.1 GET /index.html 15824 0.043  --  %{IP:client} %{WORD:method} %{URIPATHPARAM:request} %{NUMBER:bytes} %{NUMBER:duration}<br>
+>%{NUMBER:num:int}:converts the num semantic from a string to an integer
+>regular expressions:https://github.com/kkos/oniguruma/blob/master/doc/RE
+
+
+
+#### Elasticsearch
+ELK核心
+
+###### 安装
+install jdk1.8<br>
+curl -L -O https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-6.1.2.tar.gz<br>
+tar -xvf elasticsearch-6.1.2.tar.gz<br>
+cd elasticsearch-6.1.2/bin<br>
+./elasticsearch
+
+
+###### 配置
+elasticsearch.yml
+```
+network.host: 0.0.0.0
+```
+
 注：ES有执行脚本的能力，因安全因素，不能在root用户下运行，强行运行会报如下错误：<br>
 org.elasticsearch.bootstrap.StartupException: java.lang.RuntimeException: can not run elasticsearch as root<br>
 解决方案：<br>
@@ -217,27 +247,6 @@ bootstrap.system_call_filter: false
 3、重新使用SSH登录，再次启动elasticsearch即可。<br>
 
 外网访问：serverip:9200/<br>
-
-###### 日志解析
-Grok filter plugin:Parse arbitrary text and structure it.<br>
-Logstash ships with about 120 patterns by default:https://github.com/logstash-plugins/logstash-patterns-core/blob/master/patterns/grok-patterns<br> 
-building patterns to match your logs:http://grokdebug.herokuapp.com and http://grokconstructor.appspot.com/<br>
-grok pattern:%{SYNTAX:SEMANTIC} SEMANTIC:identifier you give to the piece of text being matched.<br>
->55.3.244.1 GET /index.html 15824 0.043  --  %{IP:client} %{WORD:method} %{URIPATHPARAM:request} %{NUMBER:bytes} %{NUMBER:duration}<br>
->%{NUMBER:num:int}:converts the num semantic from a string to an integer
->regular expressions:https://github.com/kkos/oniguruma/blob/master/doc/RE
-
-
-
-#### Elasticsearch
-ELK核心
-
-###### 安装
-install jdk1.8<br>
-curl -L -O https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-6.1.2.tar.gz<br>
-tar -xvf elasticsearch-6.1.2.tar.gz<br>
-cd elasticsearch-6.1.2/bin<br>
-./elasticsearch
 
 ###### 基本概念
 * Cluster: a collection of one or more nodes (servers) that together holds your entire data and provides federated indexing and search capabilities across all nodes
@@ -761,14 +770,15 @@ https://www.elastic.co/downloads/x-pack<br>
 ###### watcher
 
 ###### api
-* Put Watch API(registers a new watch in Watcher)
+* Put Watch API(registers a new watch in Watcher)<br>
+https://github.com/elastic/examples/blob/master/Alerting/Sample%20Watches/errors_in_logs/tests/test1.json<br>
 ```
 Request: 
 PUT _xpack/watcher/watch/<watch_id>
 
 PUT _xpack/watcher/watch/log_error_watch
 {
-  "trigger" : { "schedule" : { "interval" : "20s" }},
+  "trigger" : { "schedule" : { "interval" : "30s" }},
   "input" : {
     "search" : {
       "request" : {
@@ -791,6 +801,52 @@ PUT _xpack/watcher/watch/log_error_watch
         "to" : "zjhgx163@163.com",
         "subject" : "Watcher Notification", 
         "body" : "{{message}{ctx.payload.hits.total}} error logs found" 
+      }
+    }
+  }
+}
+```
+```
+PUT _xpack/watcher/watch/log_error_watch
+{
+  "trigger" : { "schedule" : { "interval" : "1m" }},
+  "input" : {
+    "search" : {
+      "request" : {
+        "indices" : [ "logstash*" ],
+        "body" : {
+          "query" : {
+ 	  	"bool": {
+                   "must": [
+                     {
+                  	"query_string": {
+                    	"query": "level:ERROR"
+                  	 }
+		      },
+            	      {
+			 "range": {
+                    	   "@timestamp": {
+                             "gte": "now-1m"
+                           }
+                      }
+                   }
+                 ]
+             }
+          }
+        }
+      }
+    }
+  },
+  "condition" : {
+    "compare" : { "ctx.payload.hits.total" : { "gt" : 0 }}
+  },
+  "actions" : {
+    "send_email" : { 
+      "email" : { 
+      	"from": "hugaoxiang@ichuangshun.com",
+        "to" : "zjhgx163@163.com",
+        "subject" : "Watcher Notification", 
+        "body" : "{{ctx.payload.hits.total}} Errors have occured in the logs:{{#ctx.payload.hits.hits}}{{_id}}:{{exception}}{{/ctx.payload.hits.hits}}" 
       }
     }
   }
@@ -899,7 +955,7 @@ xpack.notification.email.account:
         smtp:
             auth: true
             starttls.enable: true
-            starttls.required: true
+ #          starttls.required: true
             host: email-smtp.us-east-1.amazonaws.com
             port: 587
             user: AKIAIN3TN53NLWEUUUGA
