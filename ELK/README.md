@@ -846,7 +846,7 @@ PUT _xpack/watcher/watch/log_error_watch
       	"from": "hugaoxiang@ichuangshun.com",
         "to" : "zjhgx163@163.com",
         "subject" : "Watcher Notification", 
-        "body" : "{{ctx.payload.hits.total}} Errors have occured in the logs:{{#ctx.payload.hits.hits}}{{_id}}:{{exception}}{{/ctx.payload.hits.hits}}" 
+        "body" : "{{ctx.payload.hits.total}} Errors have occured in the logs:{{#ctx.payload.hits.hits}}{{_id}}:{{logger}}{{/ctx.payload.hits.hits}}" 
       }
     }
   }
