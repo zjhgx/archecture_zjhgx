@@ -101,6 +101,7 @@ filebeat.prospectors:
   enabled: true
   paths:
     - /home/vobile/bin/apache-tomcat-8.0.37/logs/catalina.out 
+  exclude_lines: ['select 1 from dual \n']  
  # The regexp Pattern that has to be matched. The example pattern matches all lines starting with [
  # multiline.pattern: '^%{HOUR}:?%{MINUTE}(?::?%{SECOND})'
  # TOMCAT_DATESTAMP 20%{YEAR}-%{MONTHNUM}-%{MONTHDAY} %{HOUR}:?%{MINUTE}(?::?%{SECOND}) %{ISO8601_TIMEZONE}不支持啊
@@ -846,13 +847,55 @@ PUT _xpack/watcher/watch/log_error_watch
       	"from": "hugaoxiang@ichuangshun.com",
         "to" : "zjhgx163@163.com",
         "subject" : "Watcher Notification", 
-        "body" : "{{ctx.payload.hits.total}} Errors have occured in the logs:{{#ctx.payload.hits.hits}}{{_id}}:{{logger}}{{/ctx.payload.hits.hits}}" 
+        "body" : "{{ctx.payload.hits.total}} Errors have occured in the logs:{{#ctx.payload.hits.hits}}{{_id}}:{{logger}}{{/ctx.payload.hits.hits}}",
+        "attachments" : {
+          "attached_data" : {
+            "data" : {
+              "format" : "json"
+            }
+          }
+        }
       }
     }
   }
 }
 ```
-
+```
+PUT _xpack/watcher/watch/log_error_watch
+{
+  "trigger" : { "schedule" : { "interval" : "30m" }},
+  "input" : {
+    "search" : {
+      "request" : {
+        "indices" : [ "logstash*" ],
+        "body" : {
+          "query" : {
+            "match" : { "level": "ERROR" },
+            "range": {
+                    "@timestamp": {
+                      "gte": "now-30m"
+                    }
+             }
+          }
+        }
+      }
+    }
+  },
+  "condition" : {
+    "compare" : { "ctx.payload.hits.total" : { "gt" : 0 }}
+  },
+  "actions" : {
+    "send_email" : { 
+      "email" : { 
+      	"from": "hugaoxiang@ichuangshun.com",
+        "to" : "zjhgx163@163.com",
+        "subject" : "Watcher Notification", 
+        "body" : "{{ctx.payload.hits.total}} Errors have occured in the logs:{{#ctx.payload.hits.hits}}{{_id}}:{{/ctx.payload.hits.hits}}" 
+      }
+    }
+  }
+}
+```
 * Get Watch API
 ```
 Request: 
